@@ -1,0 +1,11 @@
+/target
+
+# 测试数据库文件
+test_*.db
+*.db
+
+# 临时文件
+*.tmp
+*.temp
+*.log
+custom-mapping.json
