@@ -74,7 +74,7 @@ impl LLMGenerator {
         };
         
         format!(
-            "请根据以下描述生成符合{}格式的变量名，仅输出变量名，多个候选用逗号分隔，无需额外解释：\n{}",
+            "请根据以下描述生成符合{}格式的变量名，仅输出变量名，多个候选用逗号分隔，尽量用英文变量名，无需额外解释：\n{}",
             style_desc,
             description
         )
@@ -92,18 +92,27 @@ impl LLMGenerator {
     async fn call_qwen_api(&self, prompt: &str) -> Result<String, Error> {
         let api_key = self.api_key.as_ref().ok_or_else(|| Error::LLMError("API key not configured".to_string()))?;
         
-        let url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
+        // 使用兼容模式的API端点
+        let url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
         
         let request_body = serde_json::json!({
-            "model": "qwen-tiny",
-            "input": {
-                "prompt": prompt
-            },
-            "parameters": {
-                "result_format": "text",
-                "temperature": 0.1
-            }
+            "model": "qwen-plus",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "temperature": 0.1,
+            "max_tokens": 200
         });
+
+        eprintln!("🔍 调用通义千问API:");
+        eprintln!("   模型: qwen-plus");
         
         let response = self.client
             .post(url)
@@ -114,17 +123,24 @@ impl LLMGenerator {
             .await?;
         
         if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            eprintln!("❌ 通义千问API请求失败详细信息:");
+            eprintln!("   状态码: {}", status);
+            eprintln!("   错误响应: {}", error_text);
+            
             return Err(Error::LLMError(format!(
-                "API request failed with status: {}",
-                response.status()
+                "Qwen API request failed with status: {}. Error: {}",
+                status, error_text
             )));
         }
         
         let response_json: serde_json::Value = response.json().await?;
         
-        let text = response_json["output"]["text"]
+        // 使用兼容模式的响应格式
+        let text = response_json["choices"][0]["message"]["content"]
             .as_str()
-            .ok_or_else(|| Error::LLMError("Invalid response format".to_string()))?;
+            .ok_or_else(|| Error::LLMError("Invalid response format from Qwen API".to_string()))?;
         
         Ok(text.to_string())
     }
@@ -155,9 +171,16 @@ impl LLMGenerator {
             .await?;
         
         if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            eprintln!("❌ 星火API请求失败详细信息:");
+            eprintln!("   状态码: {}", status);
+            eprintln!("   错误响应: {}", error_text);
+            eprintln!("   使用的API密钥: {}", &api_key[..10]); // 只显示前10位
+            
             return Err(Error::LLMError(format!(
-                "API request failed with status: {}",
-                response.status()
+                "Xinghuo API request failed with status: {}. Error: {}",
+                status, error_text
             )));
         }
         
