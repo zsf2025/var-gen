@@ -49,6 +49,7 @@ echo ## File Description >> "%PACKAGEDIR%\INSTALL.md"
 echo - bin\var-gen.exe - Main program >> "%PACKAGEDIR%\INSTALL.md"
 echo - scripts\install.ps1 - Installation script >> "%PACKAGEDIR%\INSTALL.md"
 echo - scripts\uninstall.ps1 - Uninstallation script >> "%PACKAGEDIR%\INSTALL.md"
+
 echo - uninstall.bat - One-click uninstall (double-click to run) >> "%PACKAGEDIR%\INSTALL.md"
 echo - mapping-config-example.json - Configuration example >> "%PACKAGEDIR%\INSTALL.md"
 echo. >> "%PACKAGEDIR%\INSTALL.md"
