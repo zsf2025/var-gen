@@ -9,3 +9,5 @@ test_*.db
 *.temp
 *.log
 custom-mapping.json
+windows-installer/**/*
+!windows-installer/var-gen-*.zip
